@@ -1,0 +1,121 @@
+let numSegments = 40;  // 每個圓環的等分數
+let numRings = 20;     // 圓環的數量
+let startRadius = 200; // 最外層圓環的半徑
+let minGapFactor = 0.85; // 控制每層之間的縮小比例
+
+function setup() {
+  createCanvas(800, 800);
+  noLoop();  // 只繪製一次
+  angleMode(RADIANS);  // 使用弧度作為角度單位
+}
+
+function draw() {
+  background(255);  // 設定背景為白色
+
+  // 先將右上角的圖形複製到四個圓圓心連線的交點（底層）
+  push();
+  translate(width / 2, height / 2);  // 將畫布原點設置到四個圓的交點
+  drawPattern();  // 繪製圖形
+  pop();
+
+  // 再繪製左上角的圖形
+  push();
+  translate(width / 4, height / 4);  // 將畫布原點設置到左上角
+  drawPattern();  // 繪製圖形
+  pop();
+
+  // 繪製左下角圖形
+  push();
+  translate(width / 4, 3 * height / 4);  // 將畫布原點設置到左下角
+  scale(1, -1);  // 垂直鏡像
+  drawPattern();  // 繪製圖形
+  pop();
+
+  // 繪製右上角圖形
+  push();
+  translate(3 * width / 4, height / 4);  // 將畫布原點設置到右上角
+  scale(-1, 1);  // 水平鏡像
+  drawPattern();  // 繪製圖形
+  pop();
+
+  // 繪製右下角圖形
+  push();
+  translate(3 * width / 4, 3 * height / 4);  // 將畫布原點設置到右下角
+  scale(-1, -1);  // 水平和垂直鏡像
+  drawPattern();  // 繪製圖形
+  pop();
+}
+
+function drawPattern() {
+  let currentRadius = startRadius;  // 初始化第一個圓環的半徑
+
+  // 逐層繪製圓環，先繪製所有的圓弧，再繪製橢圓，避免割線問題
+  for (let ring = 0; ring < numRings; ring++) {
+    let ringWidth = currentRadius * 0.15;  // 圓環的寬度，隨著半徑縮小而縮小
+    if (currentRadius <= 0) break;  // 當圓環半徑過小，停止繪製
+    
+    // 繪製這個圓環的各個區塊
+    for (let segment = 0; segment < numSegments; segment++) {
+      let angleStart = TWO_PI * segment / numSegments;  // 每個區塊的起始角度
+      let angleEnd = TWO_PI * (segment + 1) / numSegments;  // 每個區塊的結束角度
+
+      // 黑白交替顏色，每個圓環的顏色順序會有所不同
+      if ((segment + ring) % 2 == 0) {
+        fill(0);  // 黑色
+      } else {
+        fill(255);  // 白色
+      }
+      
+      noStroke();  // 不需要邊線
+      // 繪製每一段圓弧區塊
+      arc(0, 0, currentRadius * 2, currentRadius * 2, angleStart, angleEnd, PIE);
+    }
+
+    // 每層半徑遞減，間距逐漸縮小
+    currentRadius *= minGapFactor;  // 使用 minGapFactor 控制縮小比例
+  }
+
+  // 再繪製橢圓，避免被割線切割
+  currentRadius = startRadius;  // 重置半徑，用於繪製橢圓
+  for (let ring = 0; ring < numRings; ring++) {
+    let ringWidth = currentRadius * 0.15;  // 圓環的寬度
+    if (currentRadius <= 0) break;
+
+    for (let segment = 0; segment < numSegments; segment++) {
+      let angleStart = TWO_PI * segment / numSegments;  // 每個區塊的起始角度
+
+      // 計算橢圓的位置，位於分割線上
+      let midAngle = angleStart;  // 橢圓位於每個分割線上
+      let ellipseX = (currentRadius - ringWidth / 2) * cos(midAngle);
+      let ellipseY = (currentRadius - ringWidth / 2) * sin(midAngle);
+
+      // 藍色和黃色交替，根據 ring 和 segment 確定顏色
+      if (ring % 2 == 0) {
+        // 偶數層圓環：segment 偶數為藍色，奇數為黃色
+        if (segment % 2 == 0) {
+          fill(191, 64, 191);  // 藍色
+        } else {
+         fill(0, 255, 255);  // 黃色
+        }
+      } else {
+        // 奇數層圓環：segment 偶數為黃色，奇數為藍色
+        if (segment % 2 == 0) {
+         fill(0, 255, 255);  // 黃色
+        } else {
+          fill(191, 64, 191);  // 藍色
+        }
+      }
+
+      let ellipseWidth = ringWidth;  // 長軸等於圓環寬度
+      let ellipseHeight = ringWidth * 0.5;  // 將短軸設置為長軸的50%
+      push();
+      translate(ellipseX, ellipseY);  // 移動到橢圓的中心
+      rotate(midAngle);  // 讓橢圓的長軸正確指向圓心
+      ellipse(0, 0, ellipseWidth, ellipseHeight);  // 繪製橢圓
+      pop();
+    }
+
+    // 每層半徑遞減
+    currentRadius *= minGapFactor;
+  }
+}
