@@ -1,0 +1,99 @@
+let numSegments = 40;  // 每個圓環的等分數
+let numRings = 20;     // 圓環的數量
+let startRadius = 200; // 最外層圓環的半徑
+let minGapFactor = 0.85; // 控制每層之間的縮小比例
+
+function setup() {
+  createCanvas(800, 800);
+  pixelDensity(2);  // 提高畫布解析度，減少鋸齒
+  noLoop();  // 只繪製一次
+  angleMode(RADIANS);  // 使用弧度作為角度單位
+  noStroke();  // 移除所有描邊
+}
+
+function draw() {
+  background(255);  // 設定背景為白色
+
+  // 先繪製左上角的圖形
+  push();
+  translate(width / 4, height / 4);  // 將畫布原點設置到左上角
+  drawPattern();  // 繪製圖形
+  pop();
+
+  // 再將左下角進行上下鏡射
+  push();
+  translate(width / 4, 3 * height / 4);  // 將畫布原點設置到左下角
+  scale(1, -1);  // 垂直鏡像
+  drawPattern();  // 繪製圖形
+  pop();
+
+  // 接著將左邊的圖形水平鏡射到右邊
+  // 右上角圖形
+  push();
+  translate(3 * width / 4, height / 4);  // 將畫布原點設置到右上角
+  scale(-1, 1);  // 水平鏡像
+  drawPattern();  // 繪製圖形
+  pop();
+
+  // 右下角圖形
+  push();
+  translate(3 * width / 4, 3 * height / 4);  // 將畫布原點設置到右下角
+  scale(-1, -1);  // 水平和垂直鏡像
+  drawPattern();  // 繪製圖形
+  pop();
+}
+
+function drawPattern() {
+  let currentRadius = startRadius;  // 初始化第一個圓環的半徑
+
+  // 逐層繪製圓環
+  for (let ring = 0; ring < numRings; ring++) {
+    let ringWidth = currentRadius * 0.15;  // 圓環的寬度，隨著半徑縮小而縮小
+    if (currentRadius <= 0) break;  // 當圓環半徑過小，停止繪製
+
+    // 計算透明度 (內環透明度高，外環透明度低)
+    let alpha = map(ring, 0, numRings - 1, 255, 50);  // 從 255 到 50 漸變
+
+    // 繪製這個圓環的各個區塊
+    for (let segment = 0; segment < numSegments; segment++) {
+      let angleStart = TWO_PI * segment / numSegments + 0.001;  // 每個區塊的起始角度，微調以消除縫隙
+      let angleEnd = TWO_PI * (segment + 1) / numSegments - 0.001;  // 每個區塊的結束角度，微調以消除縫隙
+
+      // 黑白交替顏色，每個圓環的顏色順序會有所不同
+      if ((segment + ring) % 2 == 0) {
+        fill(0, alpha);  // 黑色 (加透明度)
+      } else {
+        fill(255, alpha);  // 白色 (加透明度)
+      }
+
+      arc(0, 0, currentRadius * 2, currentRadius * 2, angleStart, angleEnd, PIE);
+
+      // 繪製小扇形作為藍色和黃色區域
+      let fanAngle = (angleEnd - angleStart) * 0.2; // 扇形角度範圍 (20% 的區塊)
+      let fanRadius = currentRadius + ringWidth * 2; // 擴大兩倍
+
+      // 左側扇形
+      push();
+      if ((segment + ring) % 2 == 0) {
+        fill(0, 0, 255, alpha); // 藍色 (加透明度)
+      } else {
+        fill(255, 255, 0, alpha); // 黃色 (加透明度)
+      }
+      arc(0, 0, fanRadius * 2, fanRadius * 2, angleStart - fanAngle, angleStart, PIE);
+      pop();
+
+      // 右側扇形
+      push();
+      if ((segment + ring) % 2 == 0) {
+        fill(255, 255, 0, alpha); // 黃色 (加透明度)
+      } else {
+        fill(0, 0, 255, alpha); // 藍色 (加透明度)
+      }
+      arc(0, 0, fanRadius * 2, fanRadius * 2, angleEnd, angleEnd + fanAngle, PIE);
+      pop();
+    }
+
+    // 每層半徑遞減，間距逐漸縮小
+    currentRadius *= minGapFactor;  // 使用 minGapFactor 控制縮小比例
+  }
+}
